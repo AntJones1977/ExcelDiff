@@ -69,9 +69,15 @@ def diff(left, right, format, output, formulas_only, ignore_style, sheets, verbo
         from exceldiff.renderers.terminal import render
         render(result, verbose=verbose)
     elif format == "html":
-        click.echo("HTML renderer not yet implemented (Phase 2).")
+        from exceldiff.renderers.html import render as render_html
+        out = output or "exceldiff_report.html"
+        path = render_html(result, out)
+        click.echo(f"HTML report saved to: {path}")
     elif format == "excel":
-        click.echo("Excel renderer not yet implemented (Phase 3).")
+        from exceldiff.renderers.excel import render as render_excel
+        out = output or "exceldiff_annotated.xlsx"
+        path = render_excel(result, out)
+        click.echo(f"Annotated Excel saved to: {path}")
 
     sys.exit(1 if result.has_differences else 0)
 
@@ -123,6 +129,19 @@ def inspect(workbook):
         )
 
     console.print(table)
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind to.")
+@click.option("--port", "-p", default=5000, help="Port to bind to.")
+@click.option("--debug", is_flag=True, help="Enable debug mode.")
+def web(host, port, debug):
+    """Launch the web UI for uploading and comparing workbooks."""
+    from exceldiff.web.app import create_app
+
+    app = create_app()
+    click.echo(f"ExcelDiff web UI running at http://{host}:{port}")
+    app.run(host=host, port=port, debug=debug)
 
 
 if __name__ == "__main__":

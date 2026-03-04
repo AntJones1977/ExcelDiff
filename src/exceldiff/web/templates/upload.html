@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}ExcelDiff — Upload{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+    <h2 style="margin-bottom: 1.5rem;">Compare Excel Workbooks</h2>
+    <form method="POST" action="{{ url_for('main.compare_files') }}" enctype="multipart/form-data">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Left file (baseline)</label>
+            <input type="file" name="left" accept=".xlsx" required
+                   style="width: 100%; padding: 8px; border: 2px dashed var(--color-border); border-radius: 8px; font-size: 0.9rem;">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Right file (comparison)</label>
+            <input type="file" name="right" accept=".xlsx" required
+                   style="width: 100%; padding: 8px; border: 2px dashed var(--color-border); border-radius: 8px; font-size: 0.9rem;">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="checkbox" name="ignore_style"> Ignore style/formatting differences
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; margin-top: 0.5rem;">
+                <input type="checkbox" name="formulas_only"> Compare formulas only
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Compare</button>
+    </form>
+</div>
+{% endblock %}

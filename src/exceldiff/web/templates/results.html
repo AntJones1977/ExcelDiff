@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}ExcelDiff — Results{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin-bottom: 0.5rem;">Comparison Results</h2>
+            <p style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                <strong>Left:</strong> {{ diff.left_path | basename }} &nbsp;&nbsp;
+                <strong>Right:</strong> {{ diff.right_path | basename }}
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('main.download', job_id=job_id, fmt='html') }}" class="btn btn-secondary">Download HTML</a>
+            <a href="{{ url_for('main.download', job_id=job_id, fmt='excel') }}" class="btn btn-secondary">Download Excel</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">New Comparison</a>
+        </div>
+    </div>
+</div>
+
+{# Stats #}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card" style="text-align: center; padding: 1.25rem;">
+        <div style="font-size: 2rem; font-weight: 700;">{{ diff.sheets_in_both | length }}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Sheets Compared</div>
+    </div>
+    <div class="card" style="text-align: center; padding: 1.25rem;">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--color-added);">{{ diff.sheets_only_in_right | length }}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Added</div>
+    </div>
+    <div class="card" style="text-align: center; padding: 1.25rem;">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--color-removed);">{{ diff.sheets_only_in_left | length }}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Removed</div>
+    </div>
+    <div class="card" style="text-align: center; padding: 1.25rem;">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--color-modified);">{{ diff.total_formula_diffs }}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Formula Diffs</div>
+    </div>
+    <div class="card" style="text-align: center; padding: 1.25rem;">
+        <div style="font-size: 2rem; font-weight: 700;">{{ diff.total_cell_diffs }}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Total Cell Diffs</div>
+    </div>
+</div>
+
+{% if not diff.has_differences %}
+<div class="card" style="text-align: center; padding: 3rem; color: var(--color-added); font-size: 1.2rem; font-weight: 600;">
+    No differences found. The workbooks are identical.
+</div>
+{% else %}
+
+{# Sheet list #}
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Sheets</h3>
+    <table>
+        <thead>
+            <tr><th>Sheet Name</th><th>Status</th><th>Formula Diffs</th><th>Style Diffs</th><th>Structural</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for sd in diff.sheet_diffs %}
+        <tr>
+            <td><strong>{{ sd.sheet_name }}</strong></td>
+            <td><span class="badge {{ sd.change_type.value }}">{{ sd.change_type.value }}</span></td>
+            <td>{{ sd.formula_diff_count if sd.change_type.value == 'modified' else '-' }}</td>
+            <td>{{ sd.style_diff_count if sd.change_type.value == 'modified' else '-' }}</td>
+            <td>{{ sd.structural_diffs | length if sd.change_type.value == 'modified' else '-' }}</td>
+            <td>
+                {% if sd.change_type.value != 'unchanged' %}
+                <a href="{{ url_for('main.sheet_detail', job_id=job_id, sheet_name=sd.sheet_name) }}" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">View Details</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endif %}
+{% endblock %}

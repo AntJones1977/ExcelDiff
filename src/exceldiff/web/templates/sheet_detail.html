@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}ExcelDiff — {{ sheet_diff.sheet_name }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="{{ url_for('main.results', job_id=job_id) }}" style="color: var(--color-primary); text-decoration: none; font-size: 0.9rem;">&larr; Back to results</a>
+</div>
+
+<div class="card">
+    <h2>{{ sheet_diff.sheet_name }} <span class="badge {{ sheet_diff.change_type.value }}">{{ sheet_diff.change_type.value }}</span></h2>
+</div>
+
+{% if sheet_diff.change_type.value in ('added', 'removed') %}
+<div class="card">
+    <p>This sheet was <strong>{{ sheet_diff.change_type.value }}</strong>.</p>
+</div>
+{% else %}
+
+{# Structural diffs #}
+{% if sheet_diff.structural_diffs %}
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Structural Changes</h3>
+    <table>
+        <thead><tr><th>Property</th><th>Left</th><th>Right</th><th>Change</th></tr></thead>
+        <tbody>
+        {% for prop in sheet_diff.structural_diffs %}
+        <tr>
+            <td><strong>{{ prop.property_name }}</strong></td>
+            <td>{{ prop.left_value if prop.left_value is not none else '-' }}</td>
+            <td>{{ prop.right_value if prop.right_value is not none else '-' }}</td>
+            <td><span class="badge {{ prop.change_type.value }}">{{ prop.change_type.value }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# Formula diffs #}
+{% set formula_diffs = sheet_diff.cell_diffs | selectattr('formula_changed') | list %}
+{% if formula_diffs %}
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Formula Changes ({{ formula_diffs | length }})</h3>
+    <table>
+        <thead><tr><th>Cell</th><th>Left Formula</th><th>Right Formula</th><th>Change</th></tr></thead>
+        <tbody>
+        {% for cd in formula_diffs %}
+        <tr>
+            <td class="cell-coord">{{ cd.coordinate }}</td>
+            {% set formula_prop = cd.properties | selectattr('property_name', 'eq', 'formula') | first | default(none) %}
+            {% if formula_prop %}
+            <td class="formula" style="color: var(--color-removed);">{{ formula_prop.left_value if formula_prop.left_value else '-' }}</td>
+            <td class="formula" style="color: var(--color-added);">{{ formula_prop.right_value if formula_prop.right_value else '-' }}</td>
+            {% else %}
+            {% set kind_prop = cd.properties | selectattr('property_name', 'eq', 'cell_kind') | first | default(none) %}
+            <td class="formula">{{ '[' ~ kind_prop.left_value ~ ']' if kind_prop else '-' }}</td>
+            <td class="formula">{{ '[' ~ kind_prop.right_value ~ ']' if kind_prop else '-' }}</td>
+            {% endif %}
+            <td><span class="badge {{ cd.change_type.value }}">{{ cd.change_type.value }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# Style diffs #}
+{% set style_diffs = sheet_diff.cell_diffs | selectattr('style_changed') | rejectattr('formula_changed') | list %}
+{% if style_diffs %}
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Style Changes ({{ style_diffs | length }} cells)</h3>
+    <table>
+        <thead><tr><th>Cell</th><th>Property</th><th>Left</th><th>Right</th></tr></thead>
+        <tbody>
+        {% for cd in style_diffs %}
+        {% for prop in cd.properties %}
+        {% if prop.property_name.startswith('style.') %}
+        <tr>
+            <td class="cell-coord">{{ cd.coordinate }}</td>
+            <td>{{ prop.property_name | replace('style.', '') }}</td>
+            <td>{{ prop.left_value }}</td>
+            <td>{{ prop.right_value }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# Other diffs #}
+{% set other_diffs = sheet_diff.cell_diffs | rejectattr('formula_changed') | rejectattr('style_changed') | list %}
+{% if other_diffs %}
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Other Cell Changes ({{ other_diffs | length }})</h3>
+    <table>
+        <thead><tr><th>Cell</th><th>Property</th><th>Left</th><th>Right</th><th>Change</th></tr></thead>
+        <tbody>
+        {% for cd in other_diffs %}
+        {% for prop in cd.properties %}
+        <tr>
+            <td class="cell-coord">{{ cd.coordinate }}</td>
+            <td>{{ prop.property_name }}</td>
+            <td>{{ prop.left_value if prop.left_value is not none else '-' }}</td>
+            <td>{{ prop.right_value if prop.right_value is not none else '-' }}</td>
+            <td><span class="badge {{ prop.change_type.value }}">{{ prop.change_type.value }}</span></td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
